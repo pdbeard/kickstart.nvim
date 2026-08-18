@@ -7,6 +7,14 @@ return {
   {
     'github/copilot.vim',
     -- lazy = true,
+    init = function()
+      -- By default copilot.vim shells out to `npx @github/copilot-language-server`
+      -- to fetch the newest server. That package's `bin` path points outside its
+      -- own directory, so npx fails to link it ("copilot-language-server: command
+      -- not found", exit 127). Setting this to 0 uses the copy bundled with the
+      -- plugin instead, which works and needs no network.
+      vim.g.copilot_npx_command = 0
+    end,
   },
   {
     'CopilotC-Nvim/CopilotChat.nvim',

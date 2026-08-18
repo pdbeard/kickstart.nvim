@@ -387,8 +387,9 @@ require('lazy').setup({
     'neovim/nvim-lspconfig',
     dependencies = {
       -- Automatically install LSPs and related tools to stdpath for Neovim
-      { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
-      'williamboman/mason-lspconfig.nvim',
+      -- NOTE: mason moved orgs (williamboman -> mason-org) and shipped 2.0
+      { 'mason-org/mason.nvim', opts = {} }, -- NOTE: Must be loaded before dependants
+      'mason-org/mason-lspconfig.nvim',
       'WhoIsSethDaniel/mason-tool-installer.nvim',
 
       -- Useful status updates for LSP.
@@ -559,6 +560,22 @@ require('lazy').setup({
         -- ts_ls = {},
         --
 
+        -- Vue. `vue_ls` needs to be told where TypeScript lives, otherwise it
+        -- fails to initialize with "Cannot read properties of undefined
+        -- (reading 'typescript')". `hybridMode = false` lets it handle TS in
+        -- .vue files itself, instead of requiring the @vue/typescript-plugin
+        -- to be loaded into ts_ls.
+        vue_ls = {
+          init_options = {
+            typescript = {
+              tsdk = vim.fn.stdpath 'data' .. '/mason/packages/vue-language-server/node_modules/typescript/lib',
+            },
+            vue = {
+              hybridMode = false,
+            },
+          },
+        },
+
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -591,16 +608,31 @@ require('lazy').setup({
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
+      -- NOTE: mason-lspconfig 2.0 removed the `handlers` setting and
+      -- `.setup_handlers()`. Servers are now configured with the native
+      -- `vim.lsp.config()` API and enabled via `automatic_enable`.
+
+      -- Broadcast our extra capabilities (from nvim-cmp) to every server.
+      vim.lsp.config('*', { capabilities = capabilities })
+
+      -- Apply the per-server overrides defined in `servers` above.
+      for server_name, server in pairs(servers) do
+        vim.lsp.config(server_name, server)
+      end
+
+      -- Automatically `vim.lsp.enable()` every server installed via Mason.
       require('mason-lspconfig').setup {
-        handlers = {
-          function(server_name)
-            local server = servers[server_name] or {}
-            -- This handles overriding only values explicitly passed
-            -- by the server configuration above. Useful when disabling
-            -- certain features of an LSP (for example, turning off formatting for ts_ls)
-            server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
-            require('lspconfig')[server_name].setup(server)
-          end,
+        automatic_enable = {
+          exclude = {
+            -- `stylua` is a formatter, run via conform.nvim above. lspconfig
+            -- ships an `lsp/stylua.lua`, so without this it gets started as a
+            -- language server and immediately exits.
+            'stylua',
+            -- Vetur: superseded by `vue_ls`. Enabling both fights over .vue files.
+            'vuels',
+            -- Archived upstream; remove from `:Mason` if you no longer need Nix.
+            'rnix',
+          },
         },
       }
     end,
@@ -833,6 +865,10 @@ require('lazy').setup({
   { 'chrisbra/Colorizer' },
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
+    -- NOTE: Pinned to `master`. The upstream default branch is now `main`, which
+    -- is a full rewrite that removes the `nvim-treesitter.configs` module used
+    -- below. Migrating to `main` is a separate job -- see the README notes.
+    branch = 'master',
     build = ':TSUpdate',
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
