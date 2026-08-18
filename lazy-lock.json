@@ -1,7 +1,7 @@
 {
   "Colorizer": { "branch": "master", "commit": "f5d69c0dea9f36e2eb025c7d86cc62b5a0d8af62" },
   "CopilotChat.nvim": { "branch": "main", "commit": "f5171b9575279995205fde6a6c06c2632bb0b9d9" },
-  "LuaSnip": { "branch": "master", "commit": "c9b9a22904c97d0eb69ccb9bab76037838326817" },
+  "LuaSnip": { "branch": "master", "commit": "0abc8f390b278c3b4aabc4c004ac8a088b65cf24" },
   "cmp-nvim-lsp": { "branch": "main", "commit": "cbc7b02bb99fae35cb42f514762b89b5126651ef" },
   "cmp-path": { "branch": "main", "commit": "c642487086dbd9a93160e1679a1327be111cbc25" },
   "cmp_luasnip": { "branch": "master", "commit": "98d9cb5c2c38532bd9bdb481067b20fea8f32e90" },
