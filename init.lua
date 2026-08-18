@@ -605,6 +605,10 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
+        -- Required by nvim-treesitter to generate parsers that don't ship a
+        -- pre-built `src/parser.c`. Mason installs the official GitHub release
+        -- binary (not the npm wrapper, which upstream advises against).
+        'tree-sitter-cli',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
