@@ -4,4 +4,7 @@ test.sh
 nvim
 
 spell/
-lazy-lock.json
+
+# NOTE: lazy-lock.json is deliberately tracked (upstream kickstart ignores it).
+# Committing it pins exact plugin revisions, so `:Lazy restore` can always put
+# the config back to a known-good state after an update goes wrong.

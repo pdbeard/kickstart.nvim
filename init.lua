@@ -628,10 +628,6 @@ require('lazy').setup({
             -- ships an `lsp/stylua.lua`, so without this it gets started as a
             -- language server and immediately exits.
             'stylua',
-            -- Vetur: superseded by `vue_ls`. Enabling both fights over .vue files.
-            'vuels',
-            -- Archived upstream; remove from `:Mason` if you no longer need Nix.
-            'rnix',
           },
         },
       }
