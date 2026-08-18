@@ -267,7 +267,11 @@ require('lazy').setup({
   { -- Fuzzy Finder (files, lsp, etc)
     'nvim-telescope/telescope.nvim',
     event = 'VimEnter',
-    branch = '0.1.x',
+    -- NOTE: was pinned to `branch = '0.1.x'` (last release May 2024). That line
+    -- calls `nvim-treesitter.parsers.ft_to_lang()` in its previewer, which no
+    -- longer exists on the nvim-treesitter `main` branch. 0.2.x uses native
+    -- `vim.treesitter` instead.
+    version = '0.2.x',
     dependencies = {
       'nvim-lua/plenary.nvim',
       { -- If encountering errors, see telescope-fzf-native README for installation instructions
