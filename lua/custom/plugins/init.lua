@@ -4,22 +4,33 @@
 -- See the kickstart.nvim README for more information
 return {
 
-    {
-        'github/copilot.vim',
-        -- lazy = true,
-      },
-      {
-        'CopilotC-Nvim/CopilotChat.nvim',
-        dependencies = {
-          { 'github/copilot.vim' }, -- or zbirenbaum/copilot.lua
-          { 'nvim-lua/plenary.nvim', branch = 'master' }, -- for curl, log and async functions
-        },
-        build = 'make tiktoken', -- Only on MacOS or Linux
-        opts = {
-          -- See Configuration section for options
-        },
-        -- See Commands section for default commands if you want to lazy load on them
-      },
+  {
+    'github/copilot.vim',
+    -- lazy = true,
+  },
+  {
+    'CopilotC-Nvim/CopilotChat.nvim',
+    dependencies = {
+      { 'github/copilot.vim' }, -- or zbirenbaum/copilot.lua
+      { 'nvim-lua/plenary.nvim', branch = 'master' }, -- for curl, log and async functions
+    },
+    build = 'make tiktoken', -- Only on MacOS or Linux
+    opts = {
+      -- See Configuration section for options
+    },
+    -- See Commands section for default commands if you want to lazy load on them
+  },
+  -- NOTE: nvim-treesitter itself is configured in init.lua. Adding a second
+  -- spec with a `config` function here would override that one entirely, so
+  -- add new parsers to `ensure_installed` in init.lua instead.
 
-    
+  -- Add nvim-treesitter-context for better context awareness
+  {
+    'nvim-treesitter/nvim-treesitter-context',
+    config = function()
+      require('treesitter-context').setup {
+        enable = true, -- Enable this plugin (Can be enabled/disabled later via commands)
+      }
+    end,
+  },
 }
