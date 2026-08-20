@@ -524,15 +524,47 @@ require('lazy').setup({
         end,
       })
 
-      -- Change diagnostic symbols in the sign column (gutter)
-      -- if vim.g.have_nerd_font then
-      --   local signs = { ERROR = '', WARN = '', INFO = '', HINT = '' }
-      --   local diagnostic_signs = {}
-      --   for type, icon in pairs(signs) do
-      --     diagnostic_signs[vim.diagnostic.severity[type]] = icon
-      --   end
-      --   vim.diagnostic.config { signs = { text = diagnostic_signs } }
-      -- end
+      -- [[ Diagnostic display ]]
+      --  Neovim shows diagnostics as gutter signs and underlines by default, but
+      --  NOT the message text -- `virtual_text` is off out of the box. That is
+      --  why an error reads as a bare "E" in the sign column with no explanation.
+      vim.diagnostic.config {
+        update_in_insert = false,
+        severity_sort = true,
+        float = { border = 'rounded', source = 'if_many' },
+        underline = { severity = { min = vim.diagnostic.severity.WARN } },
+
+        -- Show the message at the end of the offending line.
+        virtual_text = { source = 'if_many', spacing = 2 },
+        virtual_lines = false,
+
+        signs = vim.g.have_nerd_font and {
+          text = {
+            [vim.diagnostic.severity.ERROR] = ' ',
+            [vim.diagnostic.severity.WARN] = ' ',
+            [vim.diagnostic.severity.INFO] = ' ',
+            [vim.diagnostic.severity.HINT] = ' ',
+          },
+        } or true,
+
+        -- Auto-open the float when jumping with `[d` / `]d`, so long messages
+        -- are readable even when they don't fit inline.
+        jump = {
+          on_jump = function(_, bufnr)
+            vim.diagnostic.open_float { bufnr = bufnr, scope = 'cursor', focus = false }
+          end,
+        },
+      }
+
+      -- Toggle between inline text and virtual lines (rendered under the line).
+      vim.keymap.set('n', '<leader>td', function()
+        local to_lines = not vim.diagnostic.config().virtual_lines
+        vim.diagnostic.config {
+          virtual_lines = to_lines and { current_line = true } or false,
+          virtual_text = (not to_lines) and { source = 'if_many', spacing = 2 } or false,
+        }
+        vim.notify('Diagnostics: ' .. (to_lines and 'virtual lines' or 'inline text'))
+      end, { desc = '[T]oggle [D]iagnostic style' })
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.
