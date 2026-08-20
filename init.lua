@@ -32,67 +32,100 @@ vim.g.maplocalleader = ' '
 -- cover silently falls back to Neovim's *built-in* defaults -- which is why, for
 -- example, a function parameter rendered the same colour as any other variable.
 --
--- The table below re-maps the modern groups onto chinolor's own palette. Both
--- treesitter (`@variable.parameter`) and LSP semantic (`@lsp.type.parameter`)
+-- The palette and scope mapping below are taken directly from the Chinolor VS
+-- Code theme you actually use:
+--   ~/.vscode/extensions/iwyvi.chinolor-0.2.20/themes/Chinolor-color-theme.json
+-- Both treesitter (`@variable.parameter`) and LSP semantic (`@lsp.type.parameter`)
 -- groups are set: semantic tokens have the higher priority of the two, so the
 -- LSP names are the ones that win once a language server attaches.
 local chinolor = {
-  grey = '#617172',
-  cream = '#e4dfd7',
-  red = '#ee3f4d',
-  pink = '#d276a3',
-  teal = '#57c3c2',
-  blue = '#8abcd1',
-  orange = '#fb9968',
-  yellow = '#f9d367',
-  green = '#96c24e',
+  grey = '#617172', -- comment
+  cream = '#e4dfd7', -- variable
+  red = '#ee3f4d', -- invalid
+  pink = '#d276a3', -- keyword, storage.type  (def / class / lambda)
+  teal = '#57c3c2', -- keyword.control        (from / import / for / in / return / try)
+  blue = '#8abcd1', -- entity.name.function
+  orange = '#fb9968', -- variable.parameter, constant.numeric, constant.language
+  yellow = '#f9d367', -- string
+  green = '#96c24e', -- support.class, support.type, entity.name.type
+  salmon = '#f07c82', -- variable.other.property, entity.name.tag
+  rose = '#eea6b7', -- variable.language (self / cls), entity.name.module
+  jade = '#5dbe8a', -- string.regexp, constant.character.escape
+  mauve = '#c8adc4', -- entity.other.attribute-name
 }
 
 local function chinolor_extras()
-  local hl = function(group, opts)
-    vim.api.nvim_set_hl(0, group, opts)
+  local hl = function(groups, opts)
+    for _, g in ipairs(groups) do
+      vim.api.nvim_set_hl(0, g, opts)
+    end
   end
 
-  -- Parameters get their own colour, in the declaration and throughout the body.
-  for _, g in ipairs { '@variable.parameter', '@lsp.type.parameter' } do
-    hl(g, { fg = chinolor.teal })
-  end
+  -- keyword.control -> teal. This is the big one: Neovim's defaults lump all of
+  -- these in with generic keywords, which is why control flow read as purple.
+  hl({
+    '@keyword.import',
+    '@keyword.return',
+    '@keyword.repeat',
+    '@keyword.conditional',
+    '@keyword.exception',
+    '@keyword.coroutine',
+    '@keyword.debug',
+  }, { fg = chinolor.teal })
 
-  hl('@variable', { fg = chinolor.cream })
-  hl('@lsp.type.variable', { fg = chinolor.cream })
+  -- keyword / storage.type -> pink. def, class, lambda, and/or/not, global.
+  hl({ '@keyword', '@keyword.function', '@keyword.modifier', '@keyword.operator', '@type.qualifier' }, { fg = chinolor.pink })
 
-  -- Object attributes / struct fields, distinct from plain variables.
-  for _, g in ipairs { '@variable.member', '@property', '@lsp.type.property' } do
-    hl(g, { fg = chinolor.orange })
-  end
+  -- variable.parameter -> orange.
+  hl({ '@variable.parameter', '@lsp.type.parameter' }, { fg = chinolor.orange })
 
-  for _, g in ipairs { '@function', '@function.call', '@function.method', '@lsp.type.function', '@lsp.type.method' } do
-    hl(g, { fg = chinolor.blue })
-  end
+  -- variable -> cream.
+  hl({ '@variable', '@lsp.type.variable' }, { fg = chinolor.cream })
 
-  for _, g in ipairs { '@type', '@type.builtin', '@lsp.type.class', '@lsp.type.type' } do
-    hl(g, { fg = chinolor.green })
-  end
+  -- variable.language (self / cls) -> rose, italic.
+  hl({ '@variable.builtin', '@lsp.type.selfParameter', '@lsp.type.clsParameter' }, { fg = chinolor.rose, italic = true })
 
-  for _, g in ipairs { '@keyword', '@keyword.import', '@keyword.function', '@keyword.return', '@keyword.operator', '@lsp.type.keyword' } do
-    hl(g, { fg = chinolor.pink })
-  end
+  -- variable.other.property -> salmon.
+  hl({ '@variable.member', '@property', '@lsp.type.property' }, { fg = chinolor.salmon })
 
-  hl('@string', { fg = chinolor.yellow })
-  hl('@number', { fg = chinolor.orange })
-  hl('@boolean', { fg = chinolor.orange })
-  hl('@constant', { fg = chinolor.orange })
-  hl('@comment', { fg = chinolor.grey, italic = true })
-  hl('@operator', { fg = chinolor.pink })
-  hl('@punctuation.bracket', { fg = chinolor.cream })
-  hl('@punctuation.delimiter', { fg = chinolor.cream })
+  -- entity.name.function / support.function -> blue.
+  hl({
+    '@function',
+    '@function.call',
+    '@function.method',
+    '@function.method.call',
+    '@function.builtin',
+    '@constructor',
+    '@lsp.type.function',
+    '@lsp.type.method',
+    '@lsp.type.decorator',
+  }, { fg = chinolor.blue })
 
-  -- Unused locals/params shouldn't just vanish into the background.
-  hl('@lsp.mod.unused', { fg = chinolor.grey, italic = true })
+  -- support.class / support.type / entity.name.type -> green.
+  hl({ '@type', '@type.builtin', '@lsp.type.class', '@lsp.type.type', '@lsp.type.struct', '@lsp.type.enum', '@lsp.type.interface' }, { fg = chinolor.green })
+
+  -- entity.name.module -> rose.
+  hl({ '@module', '@lsp.type.namespace' }, { fg = chinolor.rose })
+
+  -- constant.numeric / constant.language / support.constant -> orange.
+  hl(
+    { '@number', '@number.float', '@boolean', '@constant', '@constant.builtin', '@lsp.type.builtinConstant', '@lsp.type.enumMember' },
+    { fg = chinolor.orange }
+  )
+
+  hl({ '@string' }, { fg = chinolor.yellow })
+  hl({ '@string.regexp', '@string.escape' }, { fg = chinolor.jade })
+  hl({ '@comment' }, { fg = chinolor.grey })
+  hl({ '@attribute', '@tag.attribute' }, { fg = chinolor.mauve })
+  hl({ '@tag' }, { fg = chinolor.salmon })
+  hl({ '@punctuation.bracket', '@punctuation.delimiter', '@operator' }, { fg = chinolor.cream })
+  hl({ '@error' }, { fg = chinolor.red })
+
+  -- Unused locals/params shouldn't vanish into the background.
+  hl({ '@lsp.mod.unused' }, { fg = chinolor.grey, italic = true })
 end
 
--- Re-apply whenever the colorscheme is (re)loaded, so `:colorscheme chinolor`
--- and any lazy-loaded plugin that resets highlights don't drop these.
+-- Re-apply whenever the colorscheme is (re)loaded.
 vim.api.nvim_create_autocmd('ColorScheme', {
   pattern = 'chinolor',
   group = vim.api.nvim_create_augroup('chinolor-extras', { clear = true }),
