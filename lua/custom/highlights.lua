@@ -54,6 +54,47 @@ M.palettes.chinolor = {
   rose = '#eea6b7', -- variable.language (self/cls), entity.name.module
   jade = '#5dbe8a', -- string.regexp, escapes, #id selectors
   mauve = '#c8adc4', -- HTML attributes, JSON keys, markup.quote
+
+  -- Editor chrome, from the theme's `colors` block. Key names below are the
+  -- VS Code setting each value comes from.
+  ui = {
+    bg = '#2b312c', -- editor.background
+    fg = '#e4dfd7', -- editor.foreground
+    line_highlight = '#1a241e', -- editor.lineHighlightBackground
+    selection = '#474b4c', -- editor.selectionBackground
+    word_highlight = '#474b4c', -- editor.wordHighlightBackground
+    cursor = '#e4dfd7', -- editorCursor.foreground
+    indent_guide = '#617172', -- editorIndentGuide.activeBackground1
+    bracket = '#87cefa', -- editorBracketHighlight.foreground3
+    bracket_bad = '#ee3f4d', -- editorBracketHighlight.unexpectedBracket.foreground
+    sidebar_bg = '#1e201f', -- sideBar.background
+    sidebar_fg = '#e4dfd7', -- sideBarTitle.foreground
+    statusbar_bg = '#134857', -- statusBar.background
+    tab_inactive_bg = '#2a2a2a', -- tab.inactiveBackground
+    border = '#575b5c', -- tab.activeBorderTop
+    blame = '#474b4c', -- git.blame.editorDecorationForeground
+    linked_edit = '#c1651a', -- editor.linkedEditingBackground
+  },
+
+  -- terminal.ansi* -- used for `:terminal` via vim.g.terminal_color_0..15.
+  terminal = {
+    [0] = '#000000', -- ansiBlack
+    [1] = '#ee3f4d', -- ansiRed
+    [2] = '#96c24e', -- ansiGreen
+    [3] = '#f9d367', -- ansiYellow
+    [4] = '#619ac3', -- ansiBlue
+    [5] = '#d276a3', -- ansiMagenta
+    [6] = '#57c3c2', -- ansiCyan
+    [7] = '#e4dfd7', -- ansiWhite
+    [8] = '#8a988e', -- ansiBrightBlack
+    [9] = '#ee3f4d', -- ansiBrightRed
+    [10] = '#41ae3c', -- ansiBrightGreen
+    [11] = '#b78d12', -- ansiBrightYellow
+    [12] = '#619ac3', -- ansiBrightBlue
+    [13] = '#cc5595', -- ansiBrightMagenta
+    [14] = '#12aa9c', -- ansiBrightCyan
+    [15] = '#f8f4ed', -- ansiBrightWhite
+  },
 }
 
 --- Build the role -> highlight-group table for a palette.
@@ -193,6 +234,66 @@ function M.groups(p)
 end
 
 --- Apply the overrides for the given palette.
+--- Editor chrome groups, from the theme's `colors` block.
+---
+--- VS Code and Neovim don't carve the UI up identically, so these fall into two
+--- kinds, marked below: a *direct* mapping where the theme names the exact
+--- thing, and a *derived* one where Neovim has a group VS Code has no setting
+--- for and the closest theme colour is used.
+--- @param u table the `ui` sub-table of a palette
+--- @return table<string, table>
+function M.ui_groups(u)
+  return {
+    -- direct
+    Normal = { fg = u.fg, bg = u.bg },
+    NormalNC = { fg = u.fg, bg = u.bg },
+    CursorLine = { bg = u.line_highlight },
+    Visual = { bg = u.selection },
+    Cursor = { fg = u.bg, bg = u.cursor },
+    MatchParen = { fg = u.bracket, bold = true },
+    StatusLine = { fg = u.fg, bg = u.statusbar_bg },
+    TabLine = { fg = u.fg, bg = u.tab_inactive_bg },
+    TabLineFill = { bg = u.tab_inactive_bg },
+    TabLineSel = { fg = u.fg, bg = u.bg },
+
+    -- editor.wordHighlightBackground -- the highlight-references-under-cursor
+    -- behaviour kickstart wires up on CursorHold.
+    LspReferenceText = { bg = u.word_highlight },
+    LspReferenceRead = { bg = u.word_highlight },
+    LspReferenceWrite = { bg = u.word_highlight },
+
+    -- editorIndentGuide -- indent-blankline
+    IblIndent = { fg = u.border },
+    IblScope = { fg = u.indent_guide },
+
+    -- sideBar.* -- neo-tree
+    NeoTreeNormal = { fg = u.fg, bg = u.sidebar_bg },
+    NeoTreeNormalNC = { fg = u.fg, bg = u.sidebar_bg },
+    NeoTreeEndOfBuffer = { fg = u.sidebar_bg, bg = u.sidebar_bg },
+    NeoTreeRootName = { fg = u.sidebar_fg, bold = true },
+
+    -- git.blame.editorDecorationForeground -- gitsigns inline blame
+    GitSignsCurrentLineBlame = { fg = u.blame },
+
+    -- editor.linkedEditingBackground -- rename preview
+    Substitute = { bg = u.linked_edit, fg = u.fg },
+
+    -- derived: Neovim needs these; VS Code has no direct equivalent setting.
+    NormalFloat = { fg = u.fg, bg = u.bg },
+    FloatBorder = { fg = u.border, bg = u.bg },
+    WinSeparator = { fg = u.border },
+    StatusLineNC = { fg = u.indent_guide, bg = u.tab_inactive_bg },
+    CursorLineNr = { fg = u.fg, bold = true },
+    LineNr = { fg = u.indent_guide },
+    ColorColumn = { bg = u.line_highlight },
+    SignColumn = { bg = u.bg },
+    EndOfBuffer = { fg = u.bg },
+    Folded = { fg = u.indent_guide, bg = u.line_highlight },
+    WinBar = { fg = u.fg, bg = u.bg },
+    WinBarNC = { fg = u.indent_guide, bg = u.bg },
+  }
+end
+
 --- Apply the structure for whichever colorscheme is active.
 ---
 --- Does nothing when the active colorscheme has no registered palette -- those
@@ -208,6 +309,22 @@ function M.apply(name)
   for group, opts in pairs(M.groups(palette)) do
     vim.api.nvim_set_hl(0, group, opts)
   end
+
+  if palette.ui then
+    for group, opts in pairs(M.ui_groups(palette.ui)) do
+      vim.api.nvim_set_hl(0, group, opts)
+    end
+  end
+
+  -- terminal.ansi* -> `:terminal` colours.
+  if palette.terminal then
+    for i = 0, 15 do
+      if palette.terminal[i] then
+        vim.g['terminal_color_' .. i] = palette.terminal[i]
+      end
+    end
+  end
+
   return true
 end
 
