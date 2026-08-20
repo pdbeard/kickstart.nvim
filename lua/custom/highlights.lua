@@ -170,7 +170,14 @@ function M.groups(p)
     '@lsp.type.typeParameter',
   }, { fg = p.green })
 
-  set({ '@module', '@lsp.type.namespace' }, { fg = p.rose })
+  -- Module / namespace names (the `os` in `import os`).
+  --
+  -- The theme has both `entity.name` (#8abcd1 blue) and the more specific
+  -- `entity.name.module` (#eea6b7 rose). VS Code maps the semantic token type
+  -- `namespace` onto the scope `entity.name.namespace`, which matches
+  -- `entity.name` by prefix -- so these render blue, not rose. Rose is reserved
+  -- for `variable.language` (self / cls) above.
+  set({ '@module', '@lsp.type.namespace' }, { fg = p.blue })
 
   -- --------------------------------------------------------------- literals
   set({
