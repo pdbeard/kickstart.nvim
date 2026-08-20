@@ -592,6 +592,21 @@ require('lazy').setup({
       --  - capabilities (table): Override fields in capabilities. Can be used to disable certain LSP features.
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
+      -- Find a project virtualenv's interpreter, so basedpyright resolves
+      -- third-party imports the way VS Code's interpreter picker would.
+      local function find_venv_python(dir)
+        if not dir then
+          return nil
+        end
+        for _, name in ipairs { '.venv', 'venv', 'env' } do
+          local py = vim.fs.joinpath(dir, name, 'bin', 'python')
+          if vim.uv.fs_stat(py) then
+            return py
+          end
+        end
+        return nil
+      end
+
       local servers = {
         -- clangd = {},
         -- gopls = {},
@@ -605,6 +620,35 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
+
+        -- Python. Two differences from a stock VS Code setup are worth knowing:
+        --
+        --  1. VS Code has an interpreter picker; Neovim does not. Without one,
+        --     basedpyright falls back to the system python, every third-party
+        --     import fails to resolve, and the resulting `Unknown` types cascade
+        --     into hundreds of downstream errors. `before_init` below points it
+        --     at the project's own virtualenv when there is one.
+        --
+        --  2. basedpyright defaults to `typeCheckingMode = "recommended"`, which
+        --     is far stricter than the "standard" that Pylance uses in VS Code.
+        --     That is what produces a warning on nearly every line.
+        basedpyright = {
+          -- NOTE: `pythonPath` has to be present when the server initializes.
+          -- Setting it later (from `before_init`, or via a didChangeConfiguration
+          -- notification) is accepted by basedpyright but it never re-resolves
+          -- the imports it already gave up on, so the venv is effectively
+          -- ignored. Resolving it up front is what actually works.
+          settings = {
+            python = { pythonPath = find_venv_python(vim.fn.getcwd()) },
+            basedpyright = {
+              analysis = {
+                -- Match VS Code / Pylance. Use 'recommended' or 'strict' if you
+                -- want basedpyright's stricter defaults back.
+                typeCheckingMode = 'standard',
+              },
+            },
+          },
+        },
 
         -- Vue. `vue_ls` needs to be told where TypeScript lives, otherwise it
         -- fails to initialize with "Cannot read properties of undefined
