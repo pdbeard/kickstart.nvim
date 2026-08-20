@@ -613,6 +613,10 @@ require('lazy').setup({
         -- pre-built `src/parser.c`. Mason installs the official GitHub release
         -- binary (not the npm wrapper, which upstream advises against).
         'tree-sitter-cli',
+        -- `kickstart.plugins.lint` configures markdownlint for markdown files,
+        -- but does not install it. Without the binary, nvim-lint raises
+        -- "Error running markdownlint: ENOENT" on every InsertLeave.
+        'markdownlint',
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
