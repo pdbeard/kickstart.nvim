@@ -87,6 +87,15 @@ vim.opt.cursorline = true
 -- Minimal number of screen lines to keep above and below the cursor.
 vim.opt.scrolloff = 10
 
+-- If performing an operation that would fail due to unsaved changes in the
+-- buffer (like `:q`), raise a dialog asking to save instead of just erroring.
+-- See `:help 'confirm'`
+vim.opt.confirm = true
+
+-- Treesitter-based folding is enabled per-buffer in the nvim-treesitter config
+-- below. Start with everything unfolded rather than fully collapsed.
+vim.opt.foldlevelstart = 99
+
 -- [[ Basic Keymaps ]]
 --  See `:help vim.keymap.set()`
 
@@ -346,6 +355,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sd', builtin.diagnostics, { desc = '[S]earch [D]iagnostics' })
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
+      vim.keymap.set('n', '<leader>sc', builtin.commands, { desc = '[S]earch [C]ommands' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
 
       -- Slightly advanced example of overriding default behavior and theme
@@ -958,6 +968,17 @@ require('lazy').setup({
           vim.bo[buf].syntax = 'on'
         end
 
+        -- Treesitter-based folding, so folds follow real code structure.
+        --  `za` toggles a fold, `zR` opens all, `zM` closes all.
+        --  `foldlevelstart` above keeps files unfolded when first opened.
+        --  Guarded: the buffer may not be in a window yet (telescope previews,
+        --  background loads), and `vim.wo[-1]` would error.
+        local win = vim.fn.bufwinid(buf)
+        if win ~= -1 then
+          vim.wo[win][0].foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+          vim.wo[win][0].foldmethod = 'expr'
+        end
+
         -- Only set indentexpr when an indents query exists, otherwise Vim's
         -- built-in indenting stays in effect.
         if not no_ts_indent[language] and vim.treesitter.query.get(language, 'indents') then
@@ -1012,7 +1033,7 @@ require('lazy').setup({
   require 'kickstart.plugins.lint',
   require 'kickstart.plugins.autopairs',
   require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
