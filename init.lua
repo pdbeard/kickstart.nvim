@@ -31,9 +31,10 @@ vim.g.maplocalleader = ' '
 -- `@...` capture groups modern Neovim actually uses, so anything it misses
 -- falls back to Neovim's built-in defaults rather than to Chinolor's palette.
 --
--- `custom.highlights` applies the real VS Code theme's role -> colour mapping,
--- and re-applies it on every `:colorscheme` change so the assignments survive
--- switching themes. See that file for the palette and how to scope it.
+-- `custom.highlights` supplies the missing groups, using the real VS Code
+-- theme's role -> colour mapping. It re-checks on every `:colorscheme` change
+-- and only acts on schemes it has a palette for, so switching to a modern
+-- colorscheme leaves that scheme's own choices alone.
 vim.cmd.colorscheme 'chinolor'
 require('custom.highlights').setup()
 -- Set to true if you have a Nerd Font installed and selected in the terminal

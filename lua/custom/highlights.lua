@@ -1,14 +1,27 @@
--- Syntax highlighting overrides, ported from the Chinolor VS Code theme.
+-- Syntax highlighting: a stable role -> colour *structure*, per colorscheme.
 --
 -- Why this exists
 -- ---------------
--- Colorschemes disagree about which *role* gets which colour: one makes every
--- keyword the same shade, another gives parameters no colour of their own. This
--- module pins that mapping down so it stays consistent no matter which
--- colorscheme is loaded.
+-- Colorschemes disagree about how finely they carve up syntax. Some give
+-- control flow (`import` / `from` / `if` / `return`) its own colour, distinct
+-- from declarations (`def` / `class`); some make every keyword one shade. Some
+-- colour function parameters differently from ordinary variables; some don't.
 --
--- The palette and the scope -> colour assignments are taken verbatim from
---   ~/.vscode/extensions/iwyvi.chinolor-0.2.20/themes/Chinolor-color-theme.json
+-- `M.groups()` below defines that structure once -- which roles are grouped
+-- together and which are held apart -- as a mapping from *palette slot names*
+-- (not hex codes) onto highlight groups.
+--
+-- How a colorscheme opts in
+-- -------------------------
+-- Register a palette for it in `M.palettes`, keyed by `vim.g.colors_name`. On
+-- every `:colorscheme`, this module looks up the new scheme:
+--   * palette registered  -> apply the structure using *that scheme's* colours
+--   * no palette          -> do nothing, leave the scheme entirely alone
+--
+-- So this never imposes one theme's palette on another. Most modern
+-- colorschemes already define the fine-grained `@...` groups themselves and
+-- need no entry here; the ones that need it are older schemes (like chinolor)
+-- written before treesitter existed.
 --
 -- Two families of highlight group are set for each role:
 --   * treesitter captures  (`@variable.parameter`) -- priority 100
@@ -19,8 +32,14 @@
 
 local M = {}
 
--- Chinolor palette, with the VS Code scope each colour is used for.
-M.palette = {
+-- Palette slots. Every colorscheme entry must define the same slot names; the
+-- structure in `M.groups()` refers to slots, never to literal colours.
+--
+-- chinolor: taken verbatim from the Chinolor VS Code theme at
+--   ~/.vscode/extensions/iwyvi.chinolor-0.2.20/themes/Chinolor-color-theme.json
+M.palettes = {}
+
+M.palettes.chinolor = {
   grey = '#617172', -- comment
   faint = '#474b4c', -- markdown inline-code punctuation
   cream = '#e4dfd7', -- variable, markdown body text
@@ -174,27 +193,41 @@ function M.groups(p)
 end
 
 --- Apply the overrides for the given palette.
---- @param p? table palette; defaults to `M.palette`
-function M.apply(p)
-  for name, opts in pairs(M.groups(p or M.palette)) do
-    vim.api.nvim_set_hl(0, name, opts)
+--- Apply the structure for whichever colorscheme is active.
+---
+--- Does nothing when the active colorscheme has no registered palette -- those
+--- schemes define the fine-grained groups themselves, and overwriting them with
+--- another theme's colours would be worse than leaving them be.
+--- @param name? string colorscheme name; defaults to `vim.g.colors_name`
+--- @return boolean applied
+function M.apply(name)
+  local palette = M.palettes[name or vim.g.colors_name or '']
+  if not palette then
+    return false
   end
+  for group, opts in pairs(M.groups(palette)) do
+    vim.api.nvim_set_hl(0, group, opts)
+  end
+  return true
 end
 
---- Re-apply on every colorscheme change, so these role assignments survive
---- `:colorscheme <anything>`.
+--- Re-apply on every colorscheme change.
 ---
---- Note the trade-off: this imposes the Chinolor palette on whatever scheme is
---- loaded. To keep it scoped to one colorscheme instead, pass its name as
---- `opts.pattern` (e.g. `{ pattern = 'chinolor' }`).
---- @param opts? { pattern?: string|string[] }
+--- `opts.palettes` registers additional colorschemes, e.g.
+---   require('custom.highlights').setup {
+---     palettes = { tokyonight = { teal = '#7dcfff', pink = '#bb9af7', ... } },
+---   }
+--- Any scheme not listed is left untouched.
+--- @param opts? { palettes?: table<string, table> }
 function M.setup(opts)
   opts = opts or {}
+  M.palettes = vim.tbl_extend('force', M.palettes, opts.palettes or {})
+
   vim.api.nvim_create_autocmd('ColorScheme', {
-    pattern = opts.pattern or '*',
+    pattern = '*',
     group = vim.api.nvim_create_augroup('custom-highlights', { clear = true }),
-    callback = function()
-      M.apply()
+    callback = function(ev)
+      M.apply(ev.match)
     end,
   })
   M.apply()
