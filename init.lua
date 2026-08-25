@@ -558,8 +558,8 @@ require('lazy').setup({
         float = { border = 'rounded', source = 'if_many' },
         underline = { severity = { min = vim.diagnostic.severity.WARN } },
 
-        -- Show the message at the end of the offending line.
-        virtual_text = { source = 'if_many', spacing = 2 },
+        -- Disable inline virtual text - cleaner editor
+        virtual_text = false,
         virtual_lines = false,
 
         signs = vim.g.have_nerd_font and {
@@ -580,15 +580,25 @@ require('lazy').setup({
         },
       }
 
-      -- Toggle between inline text and virtual lines (rendered under the line).
-      vim.keymap.set('n', '<leader>td', function()
-        local to_lines = not vim.diagnostic.config().virtual_lines
-        vim.diagnostic.config {
-          virtual_lines = to_lines and { current_line = true } or false,
-          virtual_text = (not to_lines) and { source = 'if_many', spacing = 2 } or false,
-        }
-        vim.notify('Diagnostics: ' .. (to_lines and 'virtual lines' or 'inline text'))
-      end, { desc = '[T]oggle [D]iagnostic style' })
+      -- Open buffer diagnostics in Trouble (easier to view and copy from)
+      vim.keymap.set('n', '<leader>td', '<cmd>Trouble diagnostics toggle filter.buf=0<cr>', { desc = '[T]rouble buffer [D]iagnostics' })
+
+      -- Show a reminder when diagnostics appear in current buffer
+      local diagnostics_shown = {}
+      vim.api.nvim_create_autocmd('DiagnosticChanged', {
+        group = vim.api.nvim_create_augroup('diagnostic-reminder', { clear = true }),
+        callback = function(event)
+          local bufnr = event.buf
+          local diags = vim.diagnostic.get(bufnr)
+          if #diags > 0 and not diagnostics_shown[bufnr] then
+            local count = #diags
+            vim.notify('Found ' .. count .. ' diagnostic' .. (count > 1 and 's' or '') .. ' • Press <leader>td to view', vim.log.levels.INFO)
+            diagnostics_shown[bufnr] = true
+          elseif #diags == 0 then
+            diagnostics_shown[bufnr] = nil
+          end
+        end,
+      })
 
       -- LSP servers and clients are able to communicate to each other what features they support.
       --  By default, Neovim doesn't support everything that is in the LSP specification.

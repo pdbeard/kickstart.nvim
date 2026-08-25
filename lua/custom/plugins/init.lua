@@ -41,4 +41,23 @@ return {
       }
     end,
   },
+
+  -- Trouble: Better diagnostics window for viewing errors/warnings
+  {
+    'folke/trouble.nvim',
+    opts = {
+      focus = false,
+      win = {
+        type = 'split',
+        position = 'bottom',
+        height = 15,
+      },
+    },
+    cmd = 'Trouble',
+    keys = {
+      { '<leader>xx', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics (Trouble)' },
+      { '<leader>xc', '<cmd>Trouble diagnostics toggle filter.buf=0<cr>', desc = 'Buffer Diagnostics (Trouble)' },
+      { '<leader>xs', '<cmd>Trouble symbols toggle<cr>', desc = 'Symbols (Trouble)' },
+    },
+  },
 }
